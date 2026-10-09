@@ -1,0 +1,10 @@
+<view class="container">
+  <view class="header"><view><text class="eyebrow">每天一点，专注时光</text><view class="title">数独时光</view></view><view class="badge">SUDOKU</view></view>
+  <view class="toolbar"><picker range="{{levels}}" value="{{difficulty}}" bindchange="changeDifficulty"><view class="difficulty">{{levels[difficulty]}} <text>⌄</text></view></picker><view class="time">{{elapsed}}</view><button class="new" bindtap="requestNew">新游戏</button></view>
+  <view class="stats"><text>{{completed ? '挑战完成 · 做得漂亮！' : '静下心来，每一步都有答案'}}</text><text>错误 {{mistakes}} · 空格 {{remaining}}</text></view>
+  <view class="board"><view wx:for="{{cells}}" wx:key="index" class="cell {{item.className}}" data-index="{{item.index}}" bindtap="select"><text wx:if="{{item.value}}">{{item.value}}</text><view wx:else class="notes"><text wx:for="{{item.notes}}" wx:for-item="note" wx:for-index="noteIndex" wx:key="noteIndex">{{note}}</text></view></view></view>
+  <view class="actions"><button bindtap="undo">↶<text>撤销</text></button><button bindtap="erase">⌫<text>擦除</text></button><button class="{{noteMode?'active':''}}" bindtap="toggleNotes">✎<text>笔记 {{noteMode?'开':'关'}}</text></button><button bindtap="hint">☀<text>提示</text></button></view>
+  <view class="keyboard"><button wx:for="{{numbers}}" wx:key="*this" data-value="{{item}}" bindtap="enter" disabled="{{completed}}">{{item}}</button></view>
+  <view class="tip">先选中空格，再输入数字。每行、每列和每个九宫格内，1–9 不重复。</view>
+  <view class="saved">进度自动保存 · 随时回来继续</view>
+</view>
