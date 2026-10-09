@@ -55,4 +55,5 @@ function generate(difficulty = 0) {
   }
   return {puzzle, solution}
 }
-module.exports = {generate, countSolutions, candidates}
+if (typeof module !== 'undefined') module.exports = {generate, countSolutions, candidates}
+else globalThis.Sudoku = {generate, countSolutions, candidates}
