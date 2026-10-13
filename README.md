@@ -19,3 +19,11 @@
 ## 验证
 
 运行 `node --test tests/*.test.js` 检查生成算法。浏览器交互测试使用 Python Playwright，运行 `python3 tests/browser_test.py`（需先安装 Playwright 和 Chromium）。
+
+## 蚁群搬搬 · 新游戏
+
+访问 `colony/index.html`，或点击数独首页的「蚁群搬搬」。GitHub Pages 上的路径为原网站地址后加 `colony/`。
+
+根据用户提供的 Colony Flow 截图制作的原创像素搬运游戏，规则为本项目自行设计：点击四列顶部方块投放到五个工作槽，同色蚂蚁搬走边缘或紧邻空白的像素。数字耗尽后释放工作槽；图案清空则获胜，五槽都满且全部无法工作则失败。支持提示、整步撤销、暂停、重新开始、关卡切换和本地存档。三种原创像素图案循环出现，首关方块容量较大；未宣称复刻原游戏全部规则。
+
+自动测试：`node --test tests/*.test.js`；浏览器测试：`python3 tests/colony_browser_test.py`。无需后端、构建或外部素材。
