@@ -37,7 +37,52 @@ function render(){
 }
 function setupCanvas(canvas){const ratio=Math.min(devicePixelRatio||1,2),w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.round(w*ratio)||canvas.height!==Math.round(h*ratio)){canvas.width=Math.round(w*ratio);canvas.height=Math.round(h*ratio)}const ctx=canvas.getContext('2d');ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,w,h);return {ctx,w,h}}
 function drawPicture(){const {ctx,w,h}=setupCanvas($('picture')),cw=w/state.width,ch=h/state.height;ctx.fillStyle='#875239';ctx.fillRect(0,0,w,h);state.pixels.forEach((color,i)=>{if(color<0)return;const x=(i%state.width)*cw,y=Math.floor(i/state.width)*ch;ctx.fillStyle=Colony.COLORS[color].hex;ctx.fillRect(x+.5,y+.5,cw-1,ch-1);ctx.fillStyle='#ffffff28';ctx.fillRect(x+1,y+1,cw-2,Math.max(1,ch*.18));ctx.fillStyle='#00000018';ctx.fillRect(x+1,y+ch*.78,cw-2,ch*.15)});for(const p of particles){const age=performance.now()-p.born;if(age>650)continue;const x=(p.index%28+.5)*cw,y=(Math.floor(p.index/28)+.5)*ch+age*.025;ctx.globalAlpha=1-age/650;ctx.fillStyle=Colony.COLORS[p.color].hex;ctx.fillRect(x-cw*.3,y-ch*.3,cw*.6,ch*.6);ctx.globalAlpha=1}}
-function drawAnt(ctx,x,y,angle,color,phase){ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.strokeStyle='#6b3e27';ctx.lineWidth=1.5;for(let i=-1;i<=1;i++){const swing=Math.sin(phase+i)*2;ctx.beginPath();ctx.moveTo(i*3,0);ctx.lineTo(i*3+swing,6);ctx.lineTo(i*3+3,9);ctx.moveTo(i*3,0);ctx.lineTo(i*3-swing,-6);ctx.lineTo(i*3+3,-9);ctx.stroke()}ctx.fillStyle='#8b5135';for(const [a,r] of [[-6,4.5],[0,3],[5,3]]){ctx.beginPath();ctx.ellipse(a,0,r,r*.8,0,0,Math.PI*2);ctx.fill()}ctx.fillStyle='#33251a';ctx.fillRect(6,-2,2,1);ctx.fillRect(6,1,2,1);if(color!==null){ctx.fillStyle=Colony.COLORS[color].hex;ctx.fillRect(9,-3,6,6)}ctx.restore()}
+function drawAnt(ctx,x,y,angle,color,phase){
+  ctx.save()
+  ctx.translate(x,y)
+  ctx.rotate(angle)
+  // Alternate tripod gait: front/back on one side move with the opposite middle leg.
+  ctx.translate(0,Math.sin(phase*2)*.6)
+  ctx.rotate(Math.sin(phase)*.035)
+  ctx.strokeStyle='#59341f'
+  ctx.lineWidth=1.8
+  ctx.lineCap='round'
+  ctx.lineJoin='round'
+  for(let leg=0;leg<3;leg++){
+    const anchor=(leg-1)*4
+    for(const side of [-1,1]){
+      const step=phase+(leg%2?Math.PI:0)+(side===1?Math.PI:0)
+      const stride=Math.sin(step)*4
+      const lift=Math.max(0,Math.cos(step))*2.5
+      const spread=(leg-1)*2.5
+      const kneeX=anchor+spread*.5+stride*.4
+      const kneeY=side*(5.5-lift*.3)
+      const footX=anchor+spread+stride
+      const footY=side*(10.5-lift)
+      ctx.beginPath()
+      ctx.moveTo(anchor,side*1.5)
+      ctx.lineTo(kneeX,kneeY)
+      ctx.lineTo(footX,footY)
+      ctx.stroke()
+    }
+  }
+  // Segmented body, highlights and moving antennae keep the silhouette readable.
+  for(const [a,rx,ry] of [[-6,4.5,3.5],[0,3,2.7],[5,3,2.7]]){
+    ctx.fillStyle='#8b5135'
+    ctx.beginPath();ctx.ellipse(a,0,rx,ry,0,0,Math.PI*2);ctx.fill()
+    ctx.fillStyle='#ba7a50'
+    ctx.beginPath();ctx.ellipse(a-1,-1,rx*.45,ry*.25,0,0,Math.PI*2);ctx.fill()
+  }
+  ctx.lineWidth=1
+  for(const side of [-1,1]){
+    ctx.beginPath();ctx.moveTo(7,side*1.5)
+    ctx.lineTo(10,side*(3+Math.sin(phase*.5)*.6))
+    ctx.lineTo(12,side*(4+Math.sin(phase*.5)*.8));ctx.stroke()
+  }
+  ctx.fillStyle='#33251a';ctx.fillRect(6,-2,1.5,1);ctx.fillRect(6,1,1.5,1)
+  if(color!==null){ctx.fillStyle=Colony.COLORS[color].hex;ctx.fillRect(10,-3,6,6)}
+  ctx.restore()
+}
 function geometry(){
   const main=document.querySelector('main').getBoundingClientRect(),picture=$('picture').getBoundingClientRect(),nest=document.querySelector('.nest').getBoundingClientRect()
   const relative=r=>({x:r.left-main.left,y:r.top-main.top,w:r.width,h:r.height})
