@@ -50,7 +50,18 @@
     const slot=state.slots.indexOf(null),box=state.stacks[column]?.[0]
     if(slot<0||!box)return false
     state.lastMove=JSON.stringify({...state,lastMove:null})
-    state.slots[slot]={...box};state.stacks[column].shift();state.moves++;return true
+    state.slots[slot]={...box};state.stacks[column].shift();state.moves++;settle(state);return true
+  }
+  function settle(state){
+    if(state.removed===state.total)state.status='won'
+    else if(state.slots.every(Boolean)&&state.slots.every(box=>available(state,box.color)<0))state.status='lost'
+  }
+  function harvest(state,slot,index){
+    const box=state.slots[slot]
+    if(state.status!=='playing'||!box||state.pixels[index]!==box.color||!exposed(state,index))return false
+    state.pixels[index]=-1;state.removed++;box.count--
+    if(box.count===0)state.slots[slot]=null
+    settle(state);return true
   }
   function tick(state,budget=2){
     if(state.status!=='playing')return []
@@ -63,12 +74,11 @@
       }
       if(box.count===0)state.slots[slot]=null
     })
-    if(state.removed===state.total)state.status='won'
-    else if(state.slots.every(Boolean)&&state.slots.every(box=>available(state,box.color)<0))state.status='lost'
+    settle(state)
     return events
   }
   function undo(state){return state.lastMove?JSON.parse(state.lastMove):null}
   function hint(state){return state.stacks.findIndex(stack=>stack.length&&available(state,stack[0].color)>=0)}
-  const api={COLORS,create,activate,tick,undo,hint,available,exposed}
+  const api={COLORS,create,activate,tick,undo,hint,available,exposed,harvest,settle}
   if(typeof module!=='undefined')module.exports=api;else root.Colony=api
 })(globalThis)

@@ -16,6 +16,19 @@ with sync_playwright() as p:
     assert page.locator('.slot').count()==5
     assert page.locator('#stacks button').count()==4
     page.screenshot(path='/tmp/colony-mobile.png',full_page=True)
+    # Repeated real clicks must fill every slot while previous ants are working.
+    for _ in range(5):
+        page.locator('#stacks button').first.click()
+        page.wait_for_timeout(120)
+    assert page.locator('.slot .box').count()==5
+    assert page.locator('#stacks button:disabled').count()==4
+    assert page.evaluate('missions.length')>=5
+    # Pixels stay present during the outbound walk, then disappear after the bite.
+    page.wait_for_function('missions.some(m=>!m.collected && simulationTime-m.born>=m.travel && simulationTime-m.born<m.travel+420)')
+    assert page.evaluate('missions.some(m=>!m.collected && state.pixels[m.index]===m.color)')
+    page.screenshot(path='/tmp/colony-ants-working.png',full_page=True)
+    page.wait_for_function('missions.some(m=>m.carrying && state.pixels[m.index]===-1)')
+    page.evaluate('start(1)')
     initial=page.evaluate('state.pixels.slice()')
     page.locator('#stacks button').first.click()
     page.wait_for_function('state.removed>0')

@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#ffdab0"><title>蚁群搬搬 · 像素消除</title><link rel="stylesheet" href="style.css"><script src="engine.js" defer></script><script src="game.js" defer></script></head>
-<body><main>
+<body><main><canvas id="swarm" aria-hidden="true"></canvas>
 <nav><a href="../index.html">← 数独时光</a><span>小小蚂蚁，大大工程</span><button id="help" aria-label="游戏说明">?</button></nav>
 <header><button id="pause" aria-label="暂停游戏">Ⅱ</button><div><p>蚁群搬搬</p><h1>第 <span id="level">1</span> 关</h1></div><button id="restart" aria-label="重新开始">↻</button></header>
 <div class="progress"><div id="progress-fill"></div></div><p class="progress-caption"><span id="progress-text">搬运进度 0%</span><span id="moves">投放 0 次</span></p>
 <section class="frame"><canvas id="picture" aria-label="待搬运的彩色像素图案"></canvas><div id="overlay" hidden><h2 id="overlay-title"></h2><p id="overlay-text"></p><button id="overlay-action">继续</button></div></section>
 <div class="trail"><canvas id="ants" aria-hidden="true"></canvas><div class="nest"></div></div>
 <div class="slot-heading"><span>工作槽 <strong id="slot-count">0 / 5</strong></span><button id="hint">✦ 提示</button></div><div id="slots" aria-label="五个工作槽"></div>
-<p id="message" role="status">选择下方方块，让同色蚂蚁开始搬运</p>
+<p id="message" role="status">可连续投放最多 5 盒，蚂蚁会爬上图案搬运</p>
 <section id="stacks" aria-label="待投放的方块"></section>
 <footer><button id="undo">↶ 撤销上次投放</button><span id="save-status">自动保存进度</span></footer>
 <dialog id="instructions"><h2>蚁群搬搬</h2><p>点击每列最上面的方块，把它放进工作槽。数字代表它能搬走的同色像素数量。</p><p>蚂蚁只能搬走图案边缘、或与空白相邻的像素。搬空一盒就会腾出槽位；5 个槽都满且无法搬运时，本局失败。</p><p>清空图案即可过关。先观察露在外面的颜色，再选择方块！操作失误可以撤销上一次投放。</p><button id="close-help">知道了</button></dialog>

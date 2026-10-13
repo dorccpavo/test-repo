@@ -27,3 +27,18 @@ test('capacity, pause-independent model undo, and blocked loss',()=>{
   const stuck=create();stuck.pixels.fill(0);stuck.slots=Array.from({length:5},()=>({color:1,count:5,id:0}))
   assert.equal(available(stuck,1),-1);tick(stuck);assert.equal(stuck.status,'lost')
 })
+
+test('five independent slots and targeted ant harvest',()=>{
+  const {harvest}=require('../colony/engine')
+  const s=create()
+  for(let n=0;n<5;n++)assert.equal(activate(s,0),true)
+  assert.equal(s.slots.filter(Boolean).length,5)
+  assert.equal(activate(s,1),false)
+  const target=available(s,s.slots[0].color),before=s.slots[0].count
+  assert.equal(harvest(s,0,target),true)
+  assert.equal(s.pixels[target],-1)
+  assert.equal(s.slots[0].count,before-1)
+  assert.equal(s.slots[1].count,28)
+  assert.equal(harvest(s,0,target),false)
+  assert.equal(s.removed,1)
+})
