@@ -9,10 +9,22 @@ server=ThreadingHTTPServer(('127.0.0.1',0),partial(SimpleHTTPRequestHandler,dire
 threading.Thread(target=server.serve_forever,daemon=True).start()
 with sync_playwright() as p:
     browser=p.chromium.launch(headless=True,executable_path=shutil.which('chromium'))
-    page=browser.new_page(viewport={'width':390,'height':844},device_scale_factor=1)
+    page=browser.new_page(viewport={'width':390,'height':844},device_scale_factor=1,reduced_motion='reduce')
     errors=[]
     page.on('pageerror',lambda e:errors.append(str(e)))
     page.goto(f'http://127.0.0.1:{server.server_port}/colony/')
+    # Observe the actual frame renderer, including reduced-motion browser settings.
+    page.evaluate("""() => {
+      const original=drawAnt;
+      window.gaitFrames=[];
+      drawAnt=function(ctx,x,y,angle,color,phase){
+        const probe=document.createElement('canvas');probe.width=50;probe.height=50;
+        original(probe.getContext('2d'),25,25,0,null,phase);
+        gaitFrames.push({phase,carrying:color!==null,image:probe.toDataURL()});
+        if(gaitFrames.length>400)gaitFrames.shift();
+        return original(ctx,x,y,angle,color,phase);
+      };
+    }""")
     assert page.locator('.slot').count()==5
     assert page.locator('#stacks button').count()==4
     page.screenshot(path='/tmp/colony-mobile.png',full_page=True)
@@ -28,6 +40,15 @@ with sync_playwright() as p:
     assert page.evaluate('missions.some(m=>!m.collected && state.pixels[m.index]===m.color)')
     page.screenshot(path='/tmp/colony-ants-working.png',full_page=True)
     page.wait_for_function('missions.some(m=>m.carrying && state.pixels[m.index]===-1)')
+    assert page.evaluate('new Set(gaitFrames.filter(f=>!f.carrying).map(f=>f.image)).size>2')
+    page.wait_for_function('gaitFrames.filter(f=>f.carrying).length>=4')
+    assert page.evaluate('new Set(gaitFrames.filter(f=>f.carrying).map(f=>f.image)).size>2')
+    # The full walking route starts and ends at the hole, with no supply-box waypoint.
+    assert page.evaluate("""() => {
+      const g=geometry(),m=missions.find(m=>m.carrying),points=route(m,g);
+      const endpoint=onPath(points.slice().reverse(),1);
+      return Math.abs(endpoint.x-(g.nest.x+g.nest.w/2))<.01 && Math.abs(endpoint.y-(g.nest.y+g.nest.h/2))<.01;
+    }""")
     page.evaluate('start(1)')
     initial=page.evaluate('state.pixels.slice()')
     page.locator('#stacks button').first.click()

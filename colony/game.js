@@ -2,7 +2,6 @@ const $=id=>document.getElementById(id)
 const KEY='ant-colony-v1'
 let state,paused=false,particles=[],lastFrame=0,clock=0,hinted=-1
 let missions=[],simulationTime=0,dispatchClock=0,stackSignature=''
-const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches
 function valid(s){return s&&s.width===28&&s.height===28&&Array.isArray(s.pixels)&&s.pixels.length===784&&s.pixels.every(v=>Number.isInteger(v)&&v>=-1&&v<8)&&Number.isInteger(s.level)&&s.level>0&&s.level<=999&&s.total===784&&s.removed===s.pixels.filter(v=>v===-1).length&&Number.isInteger(s.moves)&&s.moves>=0&&['playing','won','lost'].includes(s.status)&&Array.isArray(s.stacks)&&s.stacks.length===4&&s.stacks.every(a=>Array.isArray(a)&&a.every(validBox))&&Array.isArray(s.slots)&&s.slots.length===5&&s.slots.every(b=>b===null||validBox(b))&&(!s.lastMove||typeof s.lastMove==='string')}
 function validBox(b){return b&&Number.isInteger(b.color)&&b.color>=0&&b.color<8&&Number.isInteger(b.count)&&b.count>0&&b.count<=28&&Number.isInteger(b.id)}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(_){$('save-status').textContent='本浏览器无法保存进度'}}
@@ -52,8 +51,8 @@ function drawAnt(ctx,x,y,angle,color,phase){
     const anchor=(leg-1)*4
     for(const side of [-1,1]){
       const step=phase+(leg%2?Math.PI:0)+(side===1?Math.PI:0)
-      const stride=Math.sin(step)*4
-      const lift=Math.max(0,Math.cos(step))*2.5
+      const stride=Math.sin(step)*5.5
+      const lift=Math.max(0,Math.cos(step))*3.2
       const spread=(leg-1)*2.5
       const kneeX=anchor+spread*.5+stride*.4
       const kneeY=side*(5.5-lift*.3)
@@ -89,8 +88,9 @@ function geometry(){
   return {picture:relative(picture),nest:relative(nest),slots:Array.from(document.querySelectorAll('.slot'),el=>relative(el.getBoundingClientRect()))}
 }
 function route(m,g){
-  const slot=g.slots[m.slot],pic=g.picture,nest=g.nest
-  return [{x:slot.x+slot.w/2,y:slot.y+slot.h/2},{x:nest.x+nest.w/2,y:nest.y+nest.h/2},{x:pic.x+pic.w/2,y:pic.y+pic.h+8},{x:pic.x+(m.index%28+.5)*pic.w/28,y:pic.y+(Math.floor(m.index/28)+.5)*pic.h/28}]
+  const pic=g.picture,nest=g.nest
+  // Both departure and delivery are at the nest, never at the supply boxes.
+  return [{x:nest.x+nest.w/2,y:nest.y+nest.h/2},{x:pic.x+pic.w/2,y:pic.y+pic.h+8},{x:pic.x+(m.index%28+.5)*pic.w/28,y:pic.y+(Math.floor(m.index/28)+.5)*pic.h/28}]
 }
 function onPath(points,t){
   const lengths=points.slice(1).map((p,i)=>Math.hypot(p.x-points[i].x,p.y-points[i].y)),total=lengths.reduce((a,b)=>a+b,0)
@@ -110,7 +110,12 @@ function dispatch(){
     const index=state.pixels.findIndex((c,i)=>c===box.color&&!reserved.has(i)&&Colony.exposed(state,i))
     if(index<0)return
     reserved.add(index)
-    missions.push({slot,boxId:box.id,index,color:box.color,born:simulationTime,travel:1100+(Math.floor(index/28)/28)*300,collected:false})
+    const m={slot,boxId:box.id,index,color:box.color,born:simulationTime,collected:false}
+    const points=route(m,geometry())
+    const distance=points.slice(1).reduce((sum,p,i)=>sum+Math.hypot(p.x-points[i].x,p.y-points[i].y),0)
+    // A readable walking speed makes alternating footfalls visible in transit.
+    m.travel=Math.max(1200,distance/140*1000)
+    missions.push(m)
   })
 }
 function advanceMissions(){
@@ -139,7 +144,13 @@ function drawSwarm(){
       ctx.strokeStyle=Colony.COLORS[m.color].hex;ctx.lineWidth=2;ctx.beginPath();ctx.arc(pos.x,pos.y,size*.85,0,Math.PI*2);ctx.stroke()
       pos.angle+=Math.sin(age/50)*.15
     }else{pos=onPath(points.slice().reverse(),(age-m.travel-420)/m.travel);color=m.carrying?m.color:null}
-    drawAnt(ctx,pos.x,pos.y,pos.angle,color,reducedMotion?0:simulationTime/70+m.slot)
+    const returning=age>=m.travel+420
+    const progress=returning?(age-m.travel-420)/m.travel:age/m.travel
+    const scale=returning?Math.min(1,Math.max(0,(1-progress)/.12)):Math.min(1,progress/.1)
+    ctx.save();ctx.globalAlpha=scale;ctx.translate(pos.x,pos.y);ctx.scale(scale,scale)
+    // Keep leg motion throughout outbound, biting and return phases.
+    drawAnt(ctx,0,0,pos.angle,color,simulationTime/105+m.slot*1.7)
+    ctx.restore()
   }
 }
 function frame(time){
